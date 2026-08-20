@@ -32,27 +32,44 @@ amazon-title-image-compliance/
 
 本 skill 采用 **Anthropic Agent Skills 格式**（一个文件夹 + `SKILL.md`），Claude Code / Claude Desktop 及其它支持该格式的 Agent（Codex、Cursor、Windsurf、OpenClaw 等）均可直接安装。
 
-### 方式 0：自然语言一句话安装（别人最省事，推荐给非技术用户）
+### 方式 0：让 Claude 帮你下载，安装自己动手（推荐）
 
-**不用自己敲任何命令**——把下面这段话**原样复制**发给 Claude（Claude Code / Claude Desktop 均可）：
+> ⚠️ 先说明：Claude 出于安全机制，**不会**替你「下载并运行」GitHub 仓库里的脚本，也不会自动把未验证来源的 skill 装进 `~/.claude/skills/`——它把这视为"从不可信来源下载并执行文件"，一律拒绝。**这是所有 Claude 的正常行为，不是本仓库的问题。** 正确姿势：让 Claude 只负责下载，安装由你自己完成（就两条命令）。
 
-> 请帮我从 GitHub 下载并安装一个 skill 到 Claude：
-> 仓库是 https://github.com/qwqess121/amazon-title-image-compliance
-> 1. 用 git clone（或下载 ZIP 解压）把仓库拉下来
-> 2. 把 `amazon-title-image-compliance` 整个文件夹安装到 `~/.claude/skills/`（目录不存在就创建）
-> 3. 运行 `~/.claude/skills/amazon-title-image-compliance/scripts/selftest.py` 做一键自测
-> 4. 确认输出 [PASS] 全部通过后，告诉我这个 skill 是干什么的、怎么用
+**第 1 步：把下面这段话发给 Claude（只下载，不执行）**
 
-更短的版本：
+> 请帮我下载这个 GitHub 仓库，只要下载，不要执行任何文件、不要安装到 Claude：
+> 仓库：https://github.com/qwqess121/amazon-title-image-compliance
+> 用 git clone 下载到 ~/Downloads/amazon-title-image-compliance，下载完成后告诉我里面的文件结构即可。
 
-> 下载并安装这个 GitHub 仓库里的 skill 到 Claude：https://github.com/qwqess121/amazon-title-image-compliance ，装完跑一下它的 selftest 验证。
+如果 Claude 连 clone 也拒绝，就让它只下载 ZIP（纯文件下载，更容易通过）：
 
-**Claude 会自动执行**：clone/下载 → 建目录 → 复制 → 跑自测 → 汇报结果。安装完成后**重启会话**，就能用自然语言触发了，例如：
+> 请下载这个文件的 ZIP 到我的下载文件夹，不要解压、不要执行：https://github.com/qwqess121/amazon-title-image-compliance/archive/refs/heads/main.zip
+
+**第 2 步：手动安装（两条命令，复制粘贴即可）**
+
+```bash
+# Windows（PowerShell）：
+Copy-Item -Recurse $HOME\Downloads\amazon-title-image-compliance $HOME\.claude\skills\
+# macOS / Linux：
+cp -r ~/Downloads/amazon-title-image-compliance ~/.claude/skills/
+```
+
+**第 3 步：验证 + 重启会话**
+
+```bash
+cd ~/.claude/skills/amazon-title-image-compliance && python scripts/selftest.py
+# 期望输出：[PASS] make-rules / clean-titles / optimize-titles / rename-images → 全部通过
+```
+
+重启 Claude 会话后，就能用自然语言触发了，例如：
 - "批量改亚马逊标题，符合新标题格式"
 - "检查这些标题是否符合亚马逊新规"
 - "按亚马逊规则批量改图片命名"
 
-> 提示：如果 Claude 说"没有权限访问文件系统"或"不会 git"，可能是会话没开启工具权限，需要重新开启（Claude Code 需在项目目录运行，或在 Claude Desktop 里确认允许文件操作）。
+> 💡 最省事方案：如果你能直接拿到 ZIP 文件（GitHub 页面 **Code → Download ZIP**，或让分享者直接把文件发给你），解压后整个文件夹放进 `~/.claude/skills/` 就行，全程不需要 Claude 参与。
+>
+> 提示：如果 Claude 说"没有权限访问文件系统"，可能是会话没开启工具权限（Claude Code 需在项目目录运行，或在 Claude Desktop 里确认允许文件操作）。
 
 ### 方式 1：git clone（推荐）
 
