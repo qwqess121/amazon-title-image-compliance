@@ -32,6 +32,28 @@ amazon-title-image-compliance/
 
 本 skill 采用 **Anthropic Agent Skills 格式**（一个文件夹 + `SKILL.md`），Claude Code / Claude Desktop 及其它支持该格式的 Agent（Codex、Cursor、Windsurf、OpenClaw 等）均可直接安装。
 
+### 方式 0：自然语言一句话安装（别人最省事，推荐给非技术用户）
+
+**不用自己敲任何命令**——把下面这段话**原样复制**发给 Claude（Claude Code / Claude Desktop 均可）：
+
+> 请帮我从 GitHub 下载并安装一个 skill 到 Claude：
+> 仓库是 https://github.com/qwqess121/amazon-title-image-compliance
+> 1. 用 git clone（或下载 ZIP 解压）把仓库拉下来
+> 2. 把 `amazon-title-image-compliance` 整个文件夹安装到 `~/.claude/skills/`（目录不存在就创建）
+> 3. 运行 `~/.claude/skills/amazon-title-image-compliance/scripts/selftest.py` 做一键自测
+> 4. 确认输出 [PASS] 全部通过后，告诉我这个 skill 是干什么的、怎么用
+
+更短的版本：
+
+> 下载并安装这个 GitHub 仓库里的 skill 到 Claude：https://github.com/qwqess121/amazon-title-image-compliance ，装完跑一下它的 selftest 验证。
+
+**Claude 会自动执行**：clone/下载 → 建目录 → 复制 → 跑自测 → 汇报结果。安装完成后**重启会话**，就能用自然语言触发了，例如：
+- "批量改亚马逊标题，符合新标题格式"
+- "检查这些标题是否符合亚马逊新规"
+- "按亚马逊规则批量改图片命名"
+
+> 提示：如果 Claude 说"没有权限访问文件系统"或"不会 git"，可能是会话没开启工具权限，需要重新开启（Claude Code 需在项目目录运行，或在 Claude Desktop 里确认允许文件操作）。
+
 ### 方式 1：git clone（推荐）
 
 ```bash
