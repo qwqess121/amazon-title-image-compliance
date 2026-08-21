@@ -41,13 +41,14 @@ amazon-title-image-compliance/
 > 1. 用 git clone（或下载 ZIP 解压）把仓库拉下来
 > 2. 把 `amazon-title-image-compliance` 整个文件夹安装到 `~/.claude/skills/`（目录不存在就创建）
 > 3. 运行 `~/.claude/skills/amazon-title-image-compliance/scripts/selftest.py` 做一键自测
-> 4. 确认输出 [PASS] 全部通过后，告诉我这个 skill 是干什么的、怎么用
+> 4. 确认输出 [PASS] 全部通过后，检查环境：运行 `python -c "import openpyxl"`，如果报错就执行 `python -m pip install openpyxl` 装好（这个 skill 处理 Excel 时需要它）
+> 5. 告诉我这个 skill 是干什么的、怎么用
 
 更短的版本：
 
-> 下载并安装这个 GitHub 仓库里的 skill 到 Claude：https://github.com/qwqess121/amazon-title-image-compliance ，装完跑一下它的 selftest 验证。
+> 下载并安装这个 GitHub 仓库里的 skill 到 Claude：https://github.com/qwqess121/amazon-title-image-compliance ，装完跑一下它的 selftest 验证，并检查环境缺不缺 openpyxl，缺的话自动装好。
 
-**Claude 会自动执行**：clone/下载 → 建目录 → 复制 → 跑自测 → 汇报结果。安装完成后**重启会话**，就能用自然语言触发了，例如：
+**Claude 会自动执行**：clone/下载 → 建目录 → 复制 → 跑自测 → 检查并安装 openpyxl → 汇报结果。安装完成后**重启会话**，就能用自然语言触发了，例如：
 - "批量改亚马逊标题，符合新标题格式"
 - "检查这些标题是否符合亚马逊新规"
 - "按亚马逊规则批量改图片命名"

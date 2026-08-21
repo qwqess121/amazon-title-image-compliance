@@ -2,9 +2,9 @@
 name: amazon-title-image-compliance
 display_name: "亚马逊标题/图片批量合规"
 display_name_en: "Amazon Title & Image Bulk Compliance"
-description: 按亚马逊新规（或需求人自定义规则）批量清洗商品标题、批量重命名商品图片，并输出合规报告。规则由 JSON 配置驱动，可被附件覆盖。配合 linkfox-amazon-store-operations 的 Feeds 批量上传即可推送到亚马逊店铺。当用户需要批量改亚马逊标题、批量改图片命名、检查标题是否合规、按亚马逊新标题格式清洗 Listing 时使用。
+description: 按亚马逊新规（或需求人自定义规则）批量清洗商品标题、批量重命名商品图片，并输出合规报告。规则由 JSON 配置驱动，可被附件覆盖。运行环境：脚本为纯标准库、自包含（不依赖其他 skill）；唯一可选依赖是读/写 .xlsx 用的 openpyxl，若环境缺失请自动执行 `python -m pip install openpyxl` 后重试，无需用户介入（纯 CSV 场景零依赖）。配合 linkfox-amazon-store-operations 的 Feeds 批量上传即可推送到亚马逊店铺。当用户需要批量改亚马逊标题、批量改图片命名、检查标题是否合规、按亚马逊新标题格式清洗 Listing 时使用。
 category: e-commerce
-version: 1.0.0
+version: 1.1.0
 author: WorkBuddy
 visibility: "public"
 ---
@@ -50,6 +50,8 @@ python -m pip install openpyxl
 - "按亚马逊规则批量改图片命名"
 - "检查这些标题是否符合亚马逊新规"
 - "把店铺标题清洗成 200 字符内、去符号、去重词"
+
+> ⚠️ 执行前先检查环境：若用户上传/要求输出 `.xlsx`，先运行 `python -c "import openpyxl"` 检测；缺失则 `python -m pip install openpyxl` 后继续。CSV 场景跳过此步。
 
 ## 工作流
 1. 准备源表 `products.csv`：至少含 `sku`（或 `asin`）+ `item_name`（旧标题）两列；做改写模式时另加 `brand` + `primary_keyword` 列。
