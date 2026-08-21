@@ -42,7 +42,7 @@ amazon-title-image-compliance/
 > 2. 把 `amazon-title-image-compliance` 整个文件夹安装到 `~/.claude/skills/`（目录不存在就创建）
 > 3. 运行 `~/.claude/skills/amazon-title-image-compliance/scripts/selftest.py` 做一键自测
 > 4. 确认输出 [PASS] 全部通过后，检查环境：运行 `python -c "import openpyxl"`，如果报错就执行 `python -m pip install openpyxl` 装好（这个 skill 处理 Excel 时需要它）
-> 5. 告诉我这个 skill 是干什么的、怎么用
+> 5. 告诉我这个 skill 是干什么的、**完整流程是什么（诊断 → 规则配置 → 批量改标题 → 图片重命名 → 上传 → 复诊）、配套哪 3 个诊断 skill（sif-amazon-research / zach-listing-health-checker / amazon-listing-optimization）、怎么用**
 
 更短的版本：
 
