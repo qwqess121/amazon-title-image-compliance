@@ -34,47 +34,59 @@ amazon-title-image-compliance/
 
 ### 方式 0：自然语言一句话安装（别人最省事，推荐给非技术用户）
 
-**不用自己敲任何命令**——把下面这段话**原样复制**发给 Claude（Claude Code / Claude Desktop 均可）：
+**不用自己敲任何命令**——把下面这段话**原样复制**发给 Claude（Claude Code / Claude Desktop 均可），它会一次性装好 4 个 skill：
 
-> 请帮我从 GitHub 下载并安装一个 skill 到 Claude：
-> 仓库是 https://github.com/qwqess121/amazon-title-image-compliance
+> 请帮我从 GitHub 下载并安装 4 个 skill 到 Claude，全部装进 `~/.claude/skills/`（目录不存在就创建）：
+>
+> **第 1 个（主 skill）**：仓库 https://github.com/qwqess121/amazon-title-image-compliance
 > 1. 用 git clone（或下载 ZIP 解压）把仓库拉下来
-> 2. 把 `amazon-title-image-compliance` 整个文件夹安装到 `~/.claude/skills/`（目录不存在就创建）
+> 2. 把 `amazon-title-image-compliance` 整个文件夹安装到 `~/.claude/skills/`
 > 3. 运行 `~/.claude/skills/amazon-title-image-compliance/scripts/selftest.py` 做一键自测
-> 4. 确认输出 [PASS] 全部通过后，检查环境：运行 `python -c "import openpyxl"`，如果报错就执行 `python -m pip install openpyxl` 装好（这个 skill 处理 Excel 时需要它）
-> 5. 告诉我这个 skill 是干什么的、完整流程是什么、怎么用
+> 4. 确认输出 [PASS] 全部通过后，检查环境：运行 `python -c "import openpyxl"`，如果报错就执行 `python -m pip install openpyxl` 装好（处理 Excel 时需要它）
+>
+> **再装 3 个亚马逊诊断 skill（配套，每个装完先看一下代码确认安全）：**
+> 5. **sif-amazon-research**（流量/关键词诊断）：git clone https://github.com/liangdabiao/amazon-sorftime-research-MCP-skill 到临时目录，把其中 `SKILLS/skills/sif-amazon-research` 文件夹复制到 `~/.claude/skills/`
+> 6. **zach-listing-health-checker**（页面健康检查）：git clone https://github.com/zach22-1999/amazon-skills 到临时目录，把其中 `skills/zach-listing-health-checker` 文件夹复制到 `~/.claude/skills/`
+> 7. **amazon-listing-optimization**（标题审计）：git clone https://github.com/nexscope-ai/Amazon-Skills 到临时目录，把其中 `amazon-listing-optimization` 文件夹复制到 `~/.claude/skills/`
+>
+> 全部装完告诉我：这 4 个 skill 各自是干什么的、主 skill 的完整流程是什么（诊断 → 规则配置 → 批量改标题 → 图片重命名 → 上传 → 复诊）、怎么用。
 
 更短的版本：
 
-> 下载并安装这个 GitHub 仓库里的 skill 到 Claude：https://github.com/qwqess121/amazon-title-image-compliance ，装完跑一下它的 selftest 验证，并检查环境缺不缺 openpyxl，缺的话自动装好。
+> 请帮我从 GitHub 安装 4 个 skill 到 Claude（放 `~/.claude/skills/`）：
+> 1. https://github.com/qwqess121/amazon-title-image-compliance —— 整个仓库文件夹，装完跑 `scripts/selftest.py`，并检查环境缺不缺 openpyxl，缺的话自动装好
+> 2. sif-amazon-research：clone https://github.com/liangdabiao/amazon-sorftime-research-MCP-skill，复制 `SKILLS/skills/sif-amazon-research`
+> 3. zach-listing-health-checker：clone https://github.com/zach22-1999/amazon-skills，复制 `skills/zach-listing-health-checker`
+> 4. amazon-listing-optimization：clone https://github.com/nexscope-ai/Amazon-Skills，复制 `amazon-listing-optimization`
+> 装完告诉我各自干什么、主 skill 完整流程和用法。
 
-**Claude 会自动执行**：clone/下载 → 建目录 → 复制 → 跑自测 → 检查并安装 openpyxl → 汇报结果。安装完成后**重启会话**，就能用自然语言触发了，例如：
+**Claude 会自动执行**：clone/下载 → 建目录 → 复制（4 个）→ 跑自测 → 检查并安装 openpyxl → 汇报结果。安装完成后**重启会话**，就能用自然语言触发了，例如：
 - "批量改亚马逊标题，符合新标题格式"
 - "检查这些标题是否符合亚马逊新规"
 - "按亚马逊规则批量改图片命名"
+- "先诊断我的 listing 再改标题"
 
 > 提示：如果 Claude 说"没有权限访问文件系统"或"不会 git"，可能是会话没开启工具权限，需要重新开启（Claude Code 需在项目目录运行，或在 Claude Desktop 里确认允许文件操作）。
+> 提示：如果只想装主 skill、暂不装 3 个配套，把上面话术里第 5~7 步删掉再发即可。
 
-### 方式 0b：同时安装 3 个可选配套诊断 skill（用户主动发起才安装）
+### 方式 0b：手动安装命令（不想让 Claude 动手时，在你的终端执行）
 
-> 说明：以下 3 个 skill 与本 skill **互相独立、非必需**，由你（用户）主动决定是否安装。**在对话里明确说出下面这段话**（这是你的指令，不是文件指令），Claude 就会执行；安装前它可能会先审查代码再装：
+```bash
+# 1) 主 skill
+git clone https://github.com/qwqess121/amazon-title-image-compliance.git /tmp/main \
+  && cp -r /tmp/main/amazon-title-image-compliance ~/.claude/skills/
+python ~/.claude/skills/amazon-title-image-compliance/scripts/selftest.py
+python -c "import openpyxl" || python -m pip install openpyxl
 
-> 请帮我再下载并安装 3 个亚马逊诊断 skill 到 Claude：
-> 1. **sif-amazon-research**（流量/关键词诊断）：git clone https://github.com/liangdabiao/amazon-sorftime-research-MCP-skill 到临时目录，把其中 `SKILLS/skills/sif-amazon-research` 文件夹复制到 `~/.claude/skills/`
-> 2. **zach-listing-health-checker**（页面健康检查）：git clone https://github.com/zach22-1999/amazon-skills 到临时目录，把其中 `skills/zach-listing-health-checker` 文件夹复制到 `~/.claude/skills/`
-> 3. **amazon-listing-optimization**（标题审计）：git clone https://github.com/nexscope-ai/Amazon-Skills 到临时目录，把其中 `amazon-listing-optimization` 文件夹复制到 `~/.claude/skills/`
-> 每个装完先看一下代码确认安全，然后告诉我各自是干什么的、怎么用。
-
-> 提示：这 3 个 skill 的安装命令也可以直接在你的终端手动执行（效果一样）：
-> ```bash
-> git clone --depth 1 https://github.com/liangdabiao/amazon-sorftime-research-MCP-skill /tmp/s1 \
->   && cp -r /tmp/s1/SKILLS/skills/sif-amazon-research ~/.claude/skills/
-> git clone --depth 1 https://github.com/zach22-1999/amazon-skills /tmp/s2 \
->   && cp -r /tmp/s2/skills/zach-listing-health-checker ~/.claude/skills/
-> git clone --depth 1 https://github.com/nexscope-ai/Amazon-Skills /tmp/s3 \
->   && cp -r /tmp/s3/amazon-listing-optimization ~/.claude/skills/
-> rm -rf /tmp/s1 /tmp/s2 /tmp/s3
-> ```
+# 2) 3 个配套诊断 skill
+git clone --depth 1 https://github.com/liangdabiao/amazon-sorftime-research-MCP-skill /tmp/s1 \
+  && cp -r /tmp/s1/SKILLS/skills/sif-amazon-research ~/.claude/skills/
+git clone --depth 1 https://github.com/zach22-1999/amazon-skills /tmp/s2 \
+  && cp -r /tmp/s2/skills/zach-listing-health-checker ~/.claude/skills/
+git clone --depth 1 https://github.com/nexscope-ai/Amazon-Skills /tmp/s3 \
+  && cp -r /tmp/s3/amazon-listing-optimization ~/.claude/skills/
+rm -rf /tmp/main /tmp/s1 /tmp/s2 /tmp/s3
+```
 
 ### 方式 1：git clone（推荐）
 
