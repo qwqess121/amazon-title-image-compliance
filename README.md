@@ -108,17 +108,17 @@ Claude 会自动匹配本 skill 并执行。
 
 ### 诊断驱动模式（先诊断，再修改，改完复诊）
 
-修改标题前可先让 Claude 调用亚马逊 Listing 诊断 MCP 摸清现状，诊断结论直接决定改什么：
+修改标题前可先让 Claude 调用亚马逊 Listing 诊断 skill 摸清现状，诊断结论直接决定改什么。配套 3 个 GitHub 开源 skill（MIT，与本 skill 安装方式相同：clone 或下载 ZIP → 放入 `~/.claude/skills/` → 重启会话）：
 
-| 工具 | 连接器 | 诊断什么 |
+| Skill | 来源仓库 | 诊断什么 |
 |---|---|---|
-| Sif | `Sif MCP` | 流量结构（自然/广告占比）、关键词信号（流失/增长/排名断档）、竞品关键词 |
-| 卖家精灵 | `sellersprite-mcp` | ASIN 详情（价格/评分/评论/BSR）、市场研究、竞品监控 |
-| 领星 | `LingXing-MCP` | 店铺 ERP：Listing 绩效、订单库存（需店铺授权） |
+| `sif-amazon-research` | liangdabiao/amazon-sorftime-research-MCP-skill | 基于 Sif 数据：市场验证、竞品分析、流量/广告根因诊断、关键词策略（需 Sif MCP 数据源） |
+| `zach-listing-health-checker` | zach22-1999/amazon-skills | 真实消费者视角健康检查：页面可访问/价格/卖家/购物车/配送/类目节点/BSR/差评/搜索可见性（curl 抓公开页面，零 API） |
+| `amazon-listing-optimization` | nexscope-ai/Amazon-Skills | 标题审计与关键词缺口：8 维评分、竞品关键词提取、重写建议（本 skill 改写模式已集成其方法论） |
 
-**工作流**：诊断（Sif 看流量结构+关键词信号、卖家精灵看 ASIN 详情、领星看店铺绩效）→ 诊断出的 Top 流量词/流失词填入 `primary_keyword`、品牌名进 `preserve_case_words`、类目长度覆盖 `max_length` → 跑 clean/optimize → 上架 1~2 周后复诊对比自然流量占比/关键词排名变化。
+**工作流**：诊断（health-checker 看页面健康、sif-amazon-research 看流量结构+关键词信号、amazon-listing-optimization 看标题审计与缺口）→ 诊断出的 Top 流量词/流失词/缺口词填入 `primary_keyword`、品牌名进 `preserve_case_words`、类目长度覆盖 `max_length` → 跑 clean/optimize → 上架 1~2 周后复诊对比页面健康/自然流量占比/关键词覆盖评分。
 
-> 诊断 MCP 未连接时自动降级为纯规则清洗（仍可用，结果会标注「未诊断」）。诊断返回的是分析结论，不执行任何店铺写操作；上传店铺仍需 `linkfox-amazon-store-operations`。
+> 这三个 skill 未安装时自动降级为纯规则清洗（仍可用，结果会标注「未诊断」）。诊断返回的是分析结论，不执行任何店铺写操作；上传店铺仍需 `linkfox-amazon-store-operations`。
 
 ---
 

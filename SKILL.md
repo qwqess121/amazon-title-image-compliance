@@ -56,45 +56,44 @@ python -m pip install openpyxl
 
 ## 诊断前置工作流（先诊断，再修改，修改后复诊）
 
-本 skill 支持**诊断驱动**的标题修改：修改前先调用亚马逊 Listing 诊断 MCP（Sif / 卖家精灵 SellerSprite / 领星 LingXing）摸清 Listing 现状，诊断结论直接决定改什么、怎么改；改完后建议隔期复诊验证效果。**不连接诊断 MCP 时降级为纯规则清洗**（仍可用，只是不带数据依据）。
+本 skill 支持**诊断驱动**的标题修改：修改前先调用亚马逊 Listing 诊断/优化 skill（`sif-amazon-research` / `zach-listing-health-checker` / `amazon-listing-optimization`）摸清 Listing 现状，诊断结论直接决定改什么、怎么改；改完后建议隔期复诊验证效果。**这些 skill 未安装时降级为纯规则清洗**（仍可用，只是不带数据依据）。
 
-### 0) 诊断工具（MCP 连接器，任选已连接的）
-| 工具 | 连接器 | 诊断能力 | 典型调用 |
+### 0) 诊断工具（GitHub 开源 skill，需先安装到 skills 目录）
+| Skill | 来源仓库（MIT） | 诊断能力 | 安装方式 |
 |---|---|---|---|
-| Sif | `Sif MCP` | ASIN 流量结构（自然/广告占比）、关键词信号（流失词/增长词/排名断档）、竞品关键词 | `ops_get_listing_traffic_overview`、`market_get_asin_keyword_signals`、`market_get_asin_profile` |
-| 卖家精灵 | `sellersprite-mcp` | ASIN 详情（价格/评分/评论/上架时间/BSR）、市场研究、竞品监控 | `asin_detail`、`market_research`、`competitor_lookup` |
-| 领星 | `LingXing-MCP` | 店铺 ERP 数据：Listing 绩效、订单/库存（需店铺授权） | `query_product_performance_asin_lists`、`erp_listing` |
+| `sif-amazon-research` | liangdabiao/amazon-sorftime-research-MCP-skill | 基于 Sif 数据的市场验证、竞品分析、流量/广告根因诊断、关键词策略、发布评估 | clone 仓库后把 `sif-amazon-research` 文件夹放入 `~/.claude/skills/`（需 Sif MCP 数据源） |
+| `zach-listing-health-checker` | zach22-1999/amazon-skills | 以真实消费者视角检查 Listing 健康：页面可访问性/价格/卖家/购物车/配送/类目节点/BSR/差评/关键词搜索可见性（curl 抓公开页面，无需 API） | clone 仓库后把 `zach-listing-health-checker` 文件夹放入 `~/.claude/skills/` |
+| `amazon-listing-optimization` | nexscope-ai/Amazon-Skills | 标题审计与关键词缺口分析：8 维评分（标题/要点/描述/图片/A+/价格/评论/SEO 覆盖）、竞品关键词提取、重写建议（本 skill 改写模式已集成其方法论） | clone 仓库后把 `amazon-listing-optimization` 文件夹放入 `~/.claude/skills/` |
 
-> 连接器在 WorkBuddy 左侧「连接」中启用；未连接时本 skill 跳过诊断步骤直接清洗，并在结果中标注「未诊断」。
+> 安装这三个 skill 的方法与本 skill 相同（clone 或下载 ZIP → 放入 `~/.claude/skills/` → 重启会话）。它们不互相依赖、各自独立可用；`sif-amazon-research` 需要 Sif MCP 数据源，其余两个零 API 依赖。未安装时本 skill 跳过诊断步骤直接清洗，并在结果中标注「未诊断」。
 
 ### 1) 诊断阶段（改之前必做）
-- 从源表取 ASIN/SKU 列表，对每个 ASIN 调用已连接的诊断工具：
-  - **流量结构**（Sif `ops_get_listing_traffic_overview` / `ops_get_listing_traffic_structure`）：自然 vs 广告占比、各渠道得分——广告占比过高提示标题/自然位可能弱，需检查标题关键词覆盖。
-  - **关键词信号**（Sif `market_get_asin_keyword_signals`）：Top 流量词、流失词、增长词、排名断档词——**这些词应出现在新标题里**（主关键词/属性词从这取）。
-  - **ASIN 详情**（卖家精灵 `asin_detail` / Sif `market_get_asin_profile`）：标题现状、品牌、类目、评分评论、上架时间——品牌名写入 `preserve_case_words`，类目决定 `max_length`。
-  - **店铺绩效**（领星 `query_product_performance_asin_lists`，可选）：转化/流量异常项，辅助判断哪些 SKU 优先改。
-- 诊断产出写入结果表（每行加列：`diagnosed_traffic_share / top_keywords / issues_from_diag`），供第 2 步使用。
+- 从源表取 ASIN/SKU 列表，对每个 ASIN 调用已安装的诊断 skill：
+  - **Listing 健康检查**（`zach-listing-health-checker`）：页面是否可访问（狗狗页/404/下架）、价格/划线价/优惠券、卖家名称是否匹配、购物车按钮、配送时效、类目节点、BSR 排名、星级差评、关键词搜索可见性——**发现异常项（如类目节点错、BSR 骤降）先人工处理再改标题**。
+  - **流量与关键词诊断**（`sif-amazon-research`）：流量结构（自然/广告占比）、Top 流量词、流失词、增长词、排名断档词、竞品关键词布局——**这些词应出现在新标题里**（主关键词/属性词从这取）。
+  - **标题审计与缺口**（`amazon-listing-optimization`）：对现有标题做 8 维评分、找关键词缺口、给出重写建议——**直接作为 optimize-titles 的输入依据**。
+- 诊断产出写入结果表（每行加列：`health_check / top_keywords / keyword_gaps / issues_from_diag`），供第 2 步使用。
 
 ### 2) 修改阶段（诊断驱动）
 - **合规模式 `clean-titles`**：规则由诊断微调——品牌名/专有名词进 `preserve_case_words`；类目长度上限覆盖 `max_length`；诊断出的流量流失词若在标题中位置靠后被前移。
-- **改写模式 `optimize-titles`**：`primary_keyword` 优先取诊断的 Top 流量词/增长词（而非人工拍脑袋）；属性词保留诊断确认的规格（尺寸/颜色/数量）。
+- **改写模式 `optimize-titles`**：`primary_keyword` 优先取诊断的 Top 流量词/增长词/关键词缺口（而非人工拍脑袋）；属性词保留诊断确认的规格（尺寸/颜色/数量）；`amazon-listing-optimization` 的重写建议作为标题结构参考。
 - 其余流程不变（见「工作流」与「调用方式」）。
 
 ### 3) 复诊阶段（改之后建议）
-- 修改上架后 1~2 周，再次调用诊断工具对比：`natural_ratio` 是否上升、流失词排名是否回升、诊断出的 `issues` 是否消失。
+- 修改上架后 1~2 周，再次调用诊断 skill 对比：`zach-listing-health-checker` 看页面指标是否正常、`sif-amazon-research` 看自然流量占比/流失词排名是否回升、`amazon-listing-optimization` 看关键词覆盖评分是否提升。
 - 复诊结论追加到结果表末尾（`post_check` 列），供运营复盘。
 
-> 注意：诊断 MCP 返回的是**分析结论**（判断/建议），不是可执行命令；本 skill 只消费诊断数据来指导规则与参数，不执行任何店铺写操作。上传店铺仍需 `linkfox-amazon-store-operations`。
+> 注意：这三个 skill 返回的是**诊断结论/建议**，不是可执行命令；本 skill 只消费诊断数据来指导规则与参数，不执行任何店铺写操作。上传店铺仍需 `linkfox-amazon-store-operations`。
 
 ## 工作流
-0. （可选·推荐）**诊断**：调用 Sif / 卖家精灵 / 领星 MCP 摸清各 ASIN 流量结构与关键词信号（见「诊断前置工作流」），诊断结论驱动规则与参数。
+0. （可选·推荐）**诊断**：调用 `zach-listing-health-checker`（健康检查）+ `sif-amazon-research`（流量/关键词）+ `amazon-listing-optimization`（标题审计）摸清各 ASIN 现状（见「诊断前置工作流」），诊断结论驱动规则与参数。
 1. 准备源表 `products.csv`：至少含 `sku`（或 `asin`）+ `item_name`（旧标题）两列；做改写模式时另加 `brand` + `primary_keyword` 列（诊断出 Top 流量词可直接填这里）。
 2. （可选）`python amazon_compliance.py make-rules` 导出 `rules.json`，按需求人附件调整（诊断出的品牌名/专有名词加进 `preserve_case_words`）。
 3. `python amazon_compliance.py clean-titles --input products.csv --output cleaned.csv` → 合规模式，得到 `cleaned.csv`（旧标题/新标题/**status**（compliant=已合规未改动 / normalized=仅规范化大小写 / fixed=已修复违规）/是否合规/命中规则/是否改动）。
 4. `python amazon_compliance.py optimize-titles --input products.csv --output optimized.csv` → 改写模式（amazon-listing-optimization 方法论），得到 `optimized.csv`（before→after + 改写说明）。
 5. （有图片时）`python amazon_compliance.py rename-images --mapping map.csv --image-dir ./imgs --output-dir ./renamed` → 图片按 SKU 重命名输出到 `./renamed`。
 6. 把结果整理成亚马逊 flat file（`item_sku` + `item_name`），用 `linkfox-amazon-store-operations` 的 Feeds 批量上传推到店铺（授权/上传见文末「批量上传到亚马逊店铺」章节）。
-7. （可选·建议）上架 1~2 周后**复诊**：再次调用诊断工具对比自然流量占比/流失词排名变化，结论追加到结果表。
+7. （可选·建议）上架 1~2 周后**复诊**：再次调用诊断 skill 对比页面健康/自然流量占比/关键词覆盖变化，结论追加到结果表。
 
 ## 默认标题规则（可被 rules.json 覆盖）
 - 最大长度 200 字符（含空格，多数类目）。
