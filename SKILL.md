@@ -2,7 +2,7 @@
 name: amazon-title-image-compliance
 display_name: "亚马逊标题/图片批量合规"
 display_name_en: "Amazon Title & Image Bulk Compliance"
-description: 按亚马逊新规（或需求人自定义规则）批量清洗商品标题、批量重命名商品图片，并输出合规报告。规则由 JSON 配置驱动，可被附件覆盖。支持诊断驱动模式：先调用 3 个配套开源 skill（sif-amazon-research 流量/关键词诊断、zach-listing-health-checker 页面健康检查、amazon-listing-optimization 标题审计，均需另行安装到 ~/.claude/skills/）摸清 Listing 现状，再用诊断出的 Top 流量词/品牌名/类目长度驱动批量修改，修改后复诊。完整流程：诊断 → 规则配置 → 批量改标题（clean-titles 合规 / optimize-titles 改写）→ 批量重命名图片（rename-images）→ flat file 上传店铺（linkfox-amazon-store-operations）→ 复诊。运行环境：脚本为纯标准库、自包含；唯一可选依赖是读/写 .xlsx 用的 openpyxl，若环境缺失请自动执行 `python -m pip install openpyxl` 后重试（纯 CSV 场景零依赖）。当用户需要批量改亚马逊标题、批量改图片命名、检查标题是否合规、按亚马逊新标题格式清洗 Listing、诊断后优化标题时使用。安装完成后必须向用户说明完整流程与 3 个配套 skill（见正文「安装后汇报要求」）。
+description: 按亚马逊新规（或需求人自定义规则）批量清洗商品标题、批量重命名商品图片，并输出合规报告。规则由 JSON 配置驱动，可被附件覆盖。支持诊断驱动模式：可配合 3 个可选的开源 skill（sif-amazon-research 流量/关键词诊断、zach-listing-health-checker 页面健康检查、amazon-listing-optimization 标题审计，由用户主动决定是否安装到 ~/.claude/skills/）摸清 Listing 现状，再用诊断出的 Top 流量词/品牌名/类目长度驱动批量修改，修改后复诊。完整流程：诊断 → 规则配置 → 批量改标题（clean-titles 合规 / optimize-titles 改写）→ 批量重命名图片（rename-images）→ flat file 上传店铺（linkfox-amazon-store-operations）→ 复诊。运行环境：脚本为纯标准库、自包含；唯一可选依赖是读/写 .xlsx 用的 openpyxl，若缺失可在用户同意后安装（纯 CSV 场景零依赖）。当用户需要批量改亚马逊标题、批量改图片命名、检查标题是否合规、按亚马逊新标题格式清洗 Listing、诊断后优化标题时使用。
 category: e-commerce
 version: 1.2.0
 author: WorkBuddy
@@ -45,16 +45,19 @@ python -m pip install openpyxl
 - 只在用户上传/要求输出 `.xlsx` 时需要；纯 CSV 场景零依赖。
 - Agent 调用流程：检测 `openpyxl` → 缺失则 `pip install openpyxl` → 重跑命令。全程无需用户介入。
 
-## 安装后汇报要求（安装本 skill 后必须执行）
+## 安装后说明（供用户参考，非强制指令）
 
-用户安装本 skill 后，Agent 必须主动向用户完整说明以下内容（不要只报"装好了"）：
+用户安装本 skill 后，可向用户说明以下内容（是否安装 3 个可选配套 skill 由用户自行决定）：
 
 1. **核心功能**：双模式批量改标题（clean-titles 合规 / optimize-titles 改写）+ 批量重命名图片（rename-images）+ 合规报告。
-2. **诊断驱动流程**：修改前可调用 3 个配套开源 skill 诊断——`zach-listing-health-checker`（页面健康：价格/卖家/购物车/BSR/差评）、`sif-amazon-research`（流量结构+关键词信号）、`amazon-listing-optimization`（标题 8 维审计+关键词缺口）——诊断结论驱动改什么；修改后 1~2 周复诊。
-3. **3 个配套 skill 的安装方式**：与本 skill 相同（clone 或下载 ZIP → 放入 `~/.claude/skills/` → 重启会话）；未安装时降级为纯规则清洗（结果标注「未诊断」）。
+2. **诊断驱动流程**：修改前可配合 3 个可选的开源 skill 诊断——`zach-listing-health-checker`（页面健康）、`sif-amazon-research`（流量结构+关键词信号）、`amazon-listing-optimization`（标题审计+关键词缺口）——诊断结论驱动改什么；修改后 1~2 周复诊。
+3. **3 个可选配套 skill 的来源**（用户要求安装时才安装，安装前建议先审查代码）：
+   - `sif-amazon-research`：https://github.com/liangdabiao/amazon-sorftime-research-MCP-skill（路径 SKILLS/skills/sif-amazon-research）
+   - `zach-listing-health-checker`：https://github.com/zach22-1999/amazon-skills（路径 skills/zach-listing-health-checker）
+   - `amazon-listing-optimization`：https://github.com/nexscope-ai/Amazon-Skills（路径 amazon-listing-optimization）
 4. **使用方法**：源表至少 `sku`+`item_name` 两列（改写模式加 `brand`+`primary_keyword`），支持 CSV/XLSX；导出规则模板 `make-rules` 后自定义。
 
-汇报示例开头："这个 skill 是干什么的：……完整流程是：诊断 → 规则配置 → 批量改标题 → 图片重命名 → 上传 → 复诊，配套 3 个诊断 skill：……"
+> 本 skill 自身不强制要求任何配套 skill；未安装时自动降级为纯规则清洗（结果标注「未诊断」）。
 
 ## 触发场景
 - "批量改亚马逊标题，符合新标题格式"

@@ -42,7 +42,7 @@ amazon-title-image-compliance/
 > 2. 把 `amazon-title-image-compliance` 整个文件夹安装到 `~/.claude/skills/`（目录不存在就创建）
 > 3. 运行 `~/.claude/skills/amazon-title-image-compliance/scripts/selftest.py` 做一键自测
 > 4. 确认输出 [PASS] 全部通过后，检查环境：运行 `python -c "import openpyxl"`，如果报错就执行 `python -m pip install openpyxl` 装好（这个 skill 处理 Excel 时需要它）
-> 5. 告诉我这个 skill 是干什么的、**完整流程是什么（诊断 → 规则配置 → 批量改标题 → 图片重命名 → 上传 → 复诊）、配套哪 3 个诊断 skill（sif-amazon-research / zach-listing-health-checker / amazon-listing-optimization）、怎么用**
+> 5. 告诉我这个 skill 是干什么的、完整流程是什么、怎么用
 
 更短的版本：
 
@@ -54,6 +54,27 @@ amazon-title-image-compliance/
 - "按亚马逊规则批量改图片命名"
 
 > 提示：如果 Claude 说"没有权限访问文件系统"或"不会 git"，可能是会话没开启工具权限，需要重新开启（Claude Code 需在项目目录运行，或在 Claude Desktop 里确认允许文件操作）。
+
+### 方式 0b：同时安装 3 个可选配套诊断 skill（用户主动发起才安装）
+
+> 说明：以下 3 个 skill 与本 skill **互相独立、非必需**，由你（用户）主动决定是否安装。**在对话里明确说出下面这段话**（这是你的指令，不是文件指令），Claude 就会执行；安装前它可能会先审查代码再装：
+
+> 请帮我再下载并安装 3 个亚马逊诊断 skill 到 Claude：
+> 1. **sif-amazon-research**（流量/关键词诊断）：git clone https://github.com/liangdabiao/amazon-sorftime-research-MCP-skill 到临时目录，把其中 `SKILLS/skills/sif-amazon-research` 文件夹复制到 `~/.claude/skills/`
+> 2. **zach-listing-health-checker**（页面健康检查）：git clone https://github.com/zach22-1999/amazon-skills 到临时目录，把其中 `skills/zach-listing-health-checker` 文件夹复制到 `~/.claude/skills/`
+> 3. **amazon-listing-optimization**（标题审计）：git clone https://github.com/nexscope-ai/Amazon-Skills 到临时目录，把其中 `amazon-listing-optimization` 文件夹复制到 `~/.claude/skills/`
+> 每个装完先看一下代码确认安全，然后告诉我各自是干什么的、怎么用。
+
+> 提示：这 3 个 skill 的安装命令也可以直接在你的终端手动执行（效果一样）：
+> ```bash
+> git clone --depth 1 https://github.com/liangdabiao/amazon-sorftime-research-MCP-skill /tmp/s1 \
+>   && cp -r /tmp/s1/SKILLS/skills/sif-amazon-research ~/.claude/skills/
+> git clone --depth 1 https://github.com/zach22-1999/amazon-skills /tmp/s2 \
+>   && cp -r /tmp/s2/skills/zach-listing-health-checker ~/.claude/skills/
+> git clone --depth 1 https://github.com/nexscope-ai/Amazon-Skills /tmp/s3 \
+>   && cp -r /tmp/s3/amazon-listing-optimization ~/.claude/skills/
+> rm -rf /tmp/s1 /tmp/s2 /tmp/s3
+> ```
 
 ### 方式 1：git clone（推荐）
 
