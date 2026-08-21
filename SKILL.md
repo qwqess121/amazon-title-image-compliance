@@ -30,7 +30,20 @@ visibility: "public"
 - **上架需 linkfox 授权**：本 skill 不直接持有店铺凭证；批量上传走 `linkfox-amazon-store-operations`（需 `LINKFOX_AGENT_API_KEY` + 店铺 OAuth，见文末「批量上传到亚马逊店铺」章节）。无 API key 时可改用卖家中心手动批量上传。
 - **不校验图片画质**：只管文件名，不管主图白底/占比/分辨率（那是亚马逊图片内容规范，需另行工具）。
 - **重复词为启发式**：单复数按去尾 `s` 归一判断，复杂形态（如 `quality`/`qualify`）可能误判；建议跑完人工复核报告中的 `repeat_word` 行。
-- **XLSX 依赖**：读 `.xlsx` 需 `openpyxl`；未安装时脚本提示并建议改用 CSV。
+- **XLSX 依赖 openpyxl**：读/写 `.xlsx` 需 `openpyxl`；未安装时脚本会明确报错并给出修复命令。**Agent（Claude 等）遇到该报错应自动执行 `python -m pip install openpyxl` 后重试**，无需用户手动处理。
+
+### 环境依赖（Agent 自动安装）
+本 skill 脚本为纯标准库，唯一可选依赖是 XLSX 读写用的 `openpyxl`：
+
+```bash
+# 检测（任一命令成功即已安装）
+python -c "import openpyxl; print(openpyxl.__version__)"
+# 缺失时安装（Agent 遇到 ImportError 报错时自动执行）
+python -m pip install openpyxl
+```
+
+- 只在用户上传/要求输出 `.xlsx` 时需要；纯 CSV 场景零依赖。
+- Agent 调用流程：检测 `openpyxl` → 缺失则 `pip install openpyxl` → 重跑命令。全程无需用户介入。
 
 ## 触发场景
 - "批量改亚马逊标题，符合新标题格式"
@@ -41,7 +54,7 @@ visibility: "public"
 ## 工作流
 1. 准备源表 `products.csv`：至少含 `sku`（或 `asin`）+ `item_name`（旧标题）两列；做改写模式时另加 `brand` + `primary_keyword` 列。
 2. （可选）`python amazon_compliance.py make-rules` 导出 `rules.json`，按需求人附件调整。
-3. `python amazon_compliance.py clean-titles --input products.csv --output cleaned.csv` → 合规模式，得到 `cleaned.csv`（旧标题/新标题/是否合规/命中规则）。
+3. `python amazon_compliance.py clean-titles --input products.csv --output cleaned.csv` → 合规模式，得到 `cleaned.csv`（旧标题/新标题/**status**（compliant=已合规未改动 / normalized=仅规范化大小写 / fixed=已修复违规）/是否合规/命中规则/是否改动）。
 4. `python amazon_compliance.py optimize-titles --input products.csv --output optimized.csv` → 改写模式（amazon-listing-optimization 方法论），得到 `optimized.csv`（before→after + 改写说明）。
 5. （有图片时）`python amazon_compliance.py rename-images --mapping map.csv --image-dir ./imgs --output-dir ./renamed` → 图片按 SKU 重命名输出到 `./renamed`。
 6. 把结果整理成亚马逊 flat file（`item_sku` + `item_name`），用 `linkfox-amazon-store-operations` 的 Feeds 批量上传推到店铺（授权/上传见文末「批量上传到亚马逊店铺」章节）。
@@ -52,6 +65,8 @@ visibility: "public"
 - 同一词/词组 ≤2 次；单复数算重复；介词/冠词/连词豁免。
 - 禁促销语：free shipping / 100% quality / best seller / top rated / hot item / high quality 等。
 - 首字母大写（小词小写），禁全大写。
+- 保留词大小写：`preserve_case_words`（默认含 USB/LED/iPhone 等缩写与品牌名）在 Title Case 时保持原样，不会被小写化；斜杠枚举（如 Black/White）各段分别首字母大写。
+- 单字促销形容词（super/premium/new 等）仅在改写模式剔除，合规模式保留（它们是有信息量的修饰语）。
 
 ## 默认图片规则
 - 主键字段 `sku`（可改 `asin`）。

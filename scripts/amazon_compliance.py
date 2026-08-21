@@ -34,6 +34,10 @@ DEFAULT_RULES = {
         # 单字促销词（改写模式剔除：super/premium/new/best/top 等无信息量形容词）
         "single_word_promo": ["super", "premium", "new", "best", "top",
                               "hot", "great", "amazing", "perfect", "genuine"],
+        # 保留原始大小写的词（缩写/品牌名等）：title_case 时命中即保持规范写法
+        "preserve_case_words": ["USB", "LED", "DIY", "IPX", "TWS", "PC", "TSA",
+                                "HD", "SD", "TV", "AI", "VR", "AR", "3D", "WiFi",
+                                "iPhone", "iPad", "MacBook", "AirPods"],
         # 同一词允许出现次数（> 该值移除多余）
         "max_word_repeat": 2,
         # 单复数是否算同一词（去尾 s 归一）
@@ -96,16 +100,54 @@ def dedupe_words(title, rules):
     return re.sub(r"\s+", " ", " ".join(out)).strip()
 
 
-def title_case(title, exempt):
-    exempt = set(exempt)
+def title_case(title, exempt, preserve=None):
+    """Title Case，专有名词/缩写保护。
+
+    - exempt: 豁免小词（非首词时小写）
+    - preserve: 保留原始大小写的词（缩写/品牌名），命中即输出规范写法
+    - 斜杠分隔的枚举（如 Black/White）按子词各做 Title Case，保留斜杠
+    """
+    exempt = set(exempt or [])
+    preserve_map = {}
+    for p in (preserve or []):
+        preserve_map[re.sub(r"[^A-Za-z0-9]", "", p).lower()] = p
     out = []
     for i, tok in enumerate(title.split()):
         core = re.sub(r"[^A-Za-z0-9]", "", tok)
-        if i > 0 and core.lower() in exempt:
+        cl = core.lower()
+        if not core:
+            out.append(tok)
+            continue
+        # 0) 保留词（缩写/品牌）：输出规范写法，前后非字母数字字符原样保留
+        if cl in preserve_map:
+            m = re.match(r"^([^A-Za-z0-9]*)([A-Za-z0-9]+)([^A-Za-z0-9]*)$", tok)
+            if m:
+                pre, _mid, post = m.group(1), m.group(2), m.group(3)
+                out.append(pre + preserve_map[cl] + post)
+            else:
+                out.append(preserve_map[cl])
+            continue
+        # 1) 斜杠枚举（Black/White、S/M/L）：每段各自 Title Case
+        if "/" in tok:
+            segs = tok.split("/")
+            parts = []
+            for seg in segs:
+                if not seg:
+                    parts.append("")
+                    continue
+                m = re.match(r"^([^A-Za-z0-9]*)([A-Za-z0-9]+)([^A-Za-z0-9]*)$", seg)
+                if m and m.group(2):
+                    parts.append(m.group(1) + m.group(2)[:1].upper() + m.group(2)[1:].lower() + m.group(3))
+                else:
+                    parts.append(seg)
+            out.append("/".join(parts))
+            continue
+        # 2) 豁免小词：非首词小写
+        if i > 0 and cl in exempt:
             out.append(tok.lower())
-        else:
-            # 标准 Title Case：首字母大写，其余小写（词内含数字/符号不变形）
-            out.append(tok[:1].upper() + tok[1:].lower() if tok else tok)
+            continue
+        # 3) 标准 Title Case：首字母大写，其余小写（词内含数字/符号不变形）
+        out.append(tok[:1].upper() + tok[1:].lower() if tok else tok)
     return " ".join(out)
 
 
@@ -152,8 +194,8 @@ def clean_title(title, rules):
     # 5) truncate to max length (word boundary)
     if len(t) > rules["max_length"]:
         t = truncate_at_boundary(t, rules["max_length"])
-    # 6) title case
-    t = title_case(t, rules["exempt_small_words"])
+    # 6) title case（保护缩写/品牌名大小写）
+    t = title_case(t, rules["exempt_small_words"], rules.get("preserve_case_words"))
     return t, (t != title.strip())
 
 
@@ -197,7 +239,7 @@ def optimize_title(old, brand, primary_kw, rules):
                  not in set(rules.get("single_word_promo", [])))
     if len(t) > rules["max_length"]:
         t = truncate_at_boundary(t, rules["max_length"])
-    t = title_case(t, rules["exempt_small_words"])
+    t = title_case(t, rules["exempt_small_words"], rules.get("preserve_case_words"))
     # restore brand casing as provided by seller (avoid Title-Case mangling brand names)
     if brand and t.startswith(brand.title()):
         t = brand + t[len(brand.title()):]
@@ -212,7 +254,9 @@ def read_table(path):
         try:
             import openpyxl
         except ImportError:
-            sys.exit("ERROR: reading .xlsx needs openpyxl. Run: pip install openpyxl  (or use CSV)")
+            sys.exit("ERROR: reading .xlsx needs `openpyxl`.\n"
+                     "Fix: run  python -m pip install openpyxl  (auto-install if you are an agent, then retry).\n"
+                     "Alternatively convert the file to CSV and pass the .csv path.")
         wb = openpyxl.load_workbook(path, data_only=True)
         ws = wb.active
         rows = list(ws.values)
@@ -229,7 +273,9 @@ def write_table(rows, path, fieldnames):
         try:
             import openpyxl
         except ImportError:
-            sys.exit("ERROR: writing .xlsx needs openpyxl. Run: pip install openpyxl  (or use .csv)")
+            sys.exit("ERROR: writing .xlsx needs `openpyxl`.\n"
+                     "Fix: run  python -m pip install openpyxl  (auto-install if you are an agent, then retry).\n"
+                     "Alternatively pass a .csv output path.")
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.append(fieldnames)
@@ -276,7 +322,7 @@ def cmd_clean_titles(args):
     title_col = _pick_col(header, [args.title_col, "item_name", "title", "名称"]) or args.title_col
 
     out_rows = []
-    stats = {"total": 0, "orig_compliant": 0, "changed": 0,
+    stats = {"total": 0, "compliant": 0, "normalized": 0, "fixed": 0,
              "over_length": 0, "forbidden_symbol": 0, "promo_phrase": 0,
              "repeat_word": 0, "all_caps": 0}
     for r in data:
@@ -285,33 +331,40 @@ def cmd_clean_titles(args):
         old = (r.get(title_col) or "").strip()
         issues = analyze_original(old, rules["title"])
         new, changed = clean_title(old, rules["title"])
-        if not issues:
-            stats["orig_compliant"] += 1
-        if changed:
-            stats["changed"] += 1
+        if issues:
+            status = "fixed"
+            stats["fixed"] += 1
+        elif changed:
+            status = "normalized"
+            stats["normalized"] += 1
+        else:
+            status = "compliant"
+            stats["compliant"] += 1
         for code in issues:
             stats[code] = stats.get(code, 0) + 1
         out_rows.append({
             key_col: key,
             "old_title": old,
             "new_title": new,
+            "status": status,
             "original_compliant": "YES" if not issues else "NO",
             "changed": "YES" if changed else "NO",
             "issues": ";".join(issues),
         })
 
-    fieldnames = [key_col, "old_title", "new_title", "original_compliant", "changed", "issues"]
+    fieldnames = [key_col, "old_title", "new_title", "status", "original_compliant", "changed", "issues"]
     write_table(out_rows, args.output, fieldnames)
 
     print(f"\n=== clean-titles 汇总 ===")
     print(f"总数           : {stats['total']}")
-    print(f"原已合规       : {stats['orig_compliant']}")
-    print(f"已改动         : {stats['changed']}")
-    print(f"命中 over_length   : {stats.get('over_length',0)}")
-    print(f"命中 forbidden_symbol: {stats.get('forbidden_symbol',0)}")
-    print(f"命中 promo_phrase   : {stats.get('promo_phrase',0)}")
-    print(f"命中 repeat_word    : {stats.get('repeat_word',0)}")
-    print(f"命中 all_caps       : {stats.get('all_caps',0)}")
+    print(f"已合规未改动   : {stats['compliant']}")
+    print(f"仅规范化大小写 : {stats['normalized']}")
+    print(f"已修复违规     : {stats['fixed']}")
+    print(f"  命中 over_length   : {stats.get('over_length',0)}")
+    print(f"  命中 forbidden_symbol: {stats.get('forbidden_symbol',0)}")
+    print(f"  命中 promo_phrase   : {stats.get('promo_phrase',0)}")
+    print(f"  命中 repeat_word    : {stats.get('repeat_word',0)}")
+    print(f"  命中 all_caps       : {stats.get('all_caps',0)}")
     print(f"输出 -> {args.output}")
 
 

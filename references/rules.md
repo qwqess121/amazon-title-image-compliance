@@ -10,6 +10,8 @@
 | `forbidden_symbols` | `! $ ? _ { } ^ ¬ ¦ ~ # < > *` | 命中的符号被移除。品牌名含这些符号时，从数组里删掉该符号。 |
 | `exempt_small_words` | in/on/over/with/and/or/for/the/a/an/of/to/by/from | 不计入重复词限制，且非首词时小写。 |
 | `promo_phrases` | free shipping / 100% quality / best seller / top rated / hot item / high quality ... | 大小写不敏感，命中整段移除。公司禁用语增补在此。 |
+| `single_word_promo` | super / premium / new / best / top / hot / great / amazing / perfect / genuine | 单字促销形容词，**仅改写模式剔除**（合规模式保留）。 |
+| `preserve_case_words` | USB / LED / DIY / IPX / TWS / PC / TSA / HD / SD / TV / AI / VR / AR / 3D / WiFi / iPhone / iPad / MacBook / AirPods | **保留原始大小写的词**（缩写/品牌名）。Title Case 时命中即输出规范写法，不会被小写化（如 `usb`→`USB`、`iphone`→`iPhone`）。品牌名被误小写时，把品牌名加进此列表即可。 |
 | `max_word_repeat` | 2 | 同一词允许出现次数（>2 移除多余）。 |
 | `singular_plural_as_duplicate` | true | 单复数按去尾 s 归一判重（apple/apples 算重复）。 |
 

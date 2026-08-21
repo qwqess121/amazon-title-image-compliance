@@ -127,7 +127,26 @@ python scripts/amazon_compliance.py rename-images \
   --mapping map.csv --image-dir ./imgs --output-dir ./renamed --rules rules.json
 ```
 
-依赖：Python 3.8+，纯标准库；读 `.xlsx` 需 `pip install openpyxl`。
+依赖：Python 3.8+，纯标准库；读/写 `.xlsx` 需 `openpyxl`。
+
+### 环境依赖（Claude 会自动安装，无需你操作）
+
+唯一可选依赖是 XLSX 读写用的 `openpyxl`（纯 CSV 场景零依赖）：
+
+```bash
+# 检测是否已安装
+python -c "import openpyxl; print(openpyxl.__version__)"
+# 缺失时安装
+python -m pip install openpyxl
+```
+
+**在 Claude 里使用时**：如果你上传的是 Excel（.xlsx），而环境缺少 `openpyxl`，脚本会明确报错并提示安装命令——Claude 会自动执行 `pip install openpyxl` 后重试，**你不需要自己装任何东西**。如果更想省事，也可以直接把表格另存为 CSV 再上传。
+
+### 输出说明
+
+- `clean-titles` 输出列：`sku / old_title / new_title / status / original_compliant / changed / issues`
+  - `status`：`compliant`（已合规未改动）| `normalized`（仅规范化大小写）| `fixed`（已修复违规）——三者和等于总数，统计口径自洽。
+- `optimize-titles` 输出列：`sku / brand / primary_keyword / old_title / new_title / changed / note`
 
 ---
 
@@ -142,6 +161,7 @@ python scripts/amazon_compliance.py rename-images \
 | `title.exempt_small_words` | in/on/over/with/and/or/for/the/a/an/of/to/by/from | 豁免小词（不判重、非首词小写） |
 | `title.promo_phrases` | free shipping / best seller / 100% quality ... | 促销语库，命中整段移除 |
 | `title.single_word_promo` | super / premium / new / best / top ... | 单字促销词（改写模式剔除） |
+| `title.preserve_case_words` | USB / LED / iPhone / iPad / MacBook / AirPods ... | 保留原始大小写的词（缩写/品牌名），Title Case 时不被小写化。品牌名被误小写（如 AmazonBasics→Amazonbasics）时，把品牌名加进此列表即可修复 |
 | `title.max_word_repeat` | 2 | 同一词允许次数（>2 移除） |
 | `image.key_field` | sku | 图片命名主键（可改 asin） |
 | `image.format` / `image.padding` | jpg / 2 | 扩展名、附图序号位数（`_01`） |
